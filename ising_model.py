@@ -8,45 +8,27 @@ def initGrid(rows, cols):
 
     return grid
 
+def addBorderWithZeros(array):
+    rows, cols = array.shape
+    b_array = np.zeros(((rows+2),(cols+2)))
+    for i in range(1, rows+1):
+        b_array[i][1:cols+1] = array[i-1]
+
+    return b_array
+
 def switchSpin(grid, i, j):
     grid[i][j] = -1 * grid[i][j]
 
 def calculateEnergy(grid, i, j):
-    rows, cols = grid.shape
-    if i == 0 and j == 0:
-        #top-left corner
-        energy_ij = -grid[i][j] * (grid[i+1][j]+grid[i][j+1])
-    elif i == 0 and j == cols-1:
-        #top-right corner
-        energy_ij = -grid[i][j] * (grid[i+1][j]+grid[i][j-1])
-    elif i == rows-1 and j == 0:
-        #bottom-left corner
-        energy_ij = -grid[i][j] * (grid[i-1][j]+grid[i][j+1])
-    elif i == rows-1 and j == cols-1:
-        #bottom-right corner
-        energy_ij = -grid[i][j] * (grid[i-1][j]+grid[i][j-1])
-    elif i == 0:
-        #upper row
-        energy_ij = -grid[i][j] * (grid[i+1][j]+grid[i][j+1]+grid[i][j-1])
-    elif i == rows-1:
-        #bottom row
-        energy_ij = -grid[i][j] * (grid[i-1][j]+grid[i][j+1]+grid[i][j-1])
-    elif j == 0:
-        #left-most column
-        energy_ij = -grid[i][j] * (grid[i+1][j]+grid[i-1][j]+grid[i][j+1])
-    elif j == cols-1:
-        #right-most column
-        energy_ij = -grid[i][j] * (grid[i+1][j]+grid[i-1][j]+grid[i][j-1])
-    else:
-        energy_ij = -grid[i][j] * (grid[i+1][j]+grid[i-1][j]+grid[i][j+1]+grid[i][j-1])
+    energy_ij = -grid[i][j] * (grid[i+1][j]+grid[i-1][j]+grid[i][j+1]+grid[i][j-1])
     
     return energy_ij
 
 def runIsingModel(grid, temperature, steps):
     rows, cols = grid.shape
     for _ in range(steps):
-        i = np.random.randint(rows)
-        j = np.random.randint(cols)
+        i = np.random.randint(1, rows-2)
+        j = np.random.randint(1, cols-2)
         energy = calculateEnergy(grid, i, j)
         if energy > 0:
             switchSpin(grid, i, j)
@@ -57,8 +39,11 @@ def runIsingModel(grid, temperature, steps):
 
 def showGrid(start_grid, grid, steps, temp):
     fig, (ax1, ax2) = plt.subplots(1, 2)
-    ax1.imshow(start_grid, interpolation="none")
-    ax2.imshow(grid, interpolation="none")
+
+    cmap = plt.get_cmap("viridis")
+
+    ax1.imshow(start_grid, interpolation="none", cmap=cmap)
+    ax2.imshow(grid, interpolation="none", cmap=cmap)
     
     fig.suptitle(f"Spin lattice vs Spin lattice after {steps} steps\nTemperature={temp}", fontsize=16, fontweight="bold")
 
@@ -117,6 +102,8 @@ if __name__ == "__main__":
             cols = args.cols
 
         grid = initGrid(rows, cols)
+
+    grid = addBorderWithZeros(grid)
 
     if args.steps:
         steps = args.steps

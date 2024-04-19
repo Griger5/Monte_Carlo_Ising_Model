@@ -1,6 +1,7 @@
 import argparse
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.animation as animation
 
 def initGrid(rows, cols):
     grid = 2*np.random.randint(2, size=rows*cols)-1
@@ -49,6 +50,45 @@ def showGrid(start_grid, grid, steps, temp):
 
     plt.show()
 
+def animIsingModel(grid, temperature, steps):
+    rows, cols = grid.shape
+    saved_grids = [(np.copy(grid), 0)]
+    for k in range(steps):
+        i = np.random.randint(1, rows-2)
+        j = np.random.randint(1, cols-2)
+        energy = calculateEnergy(grid, i, j)
+        if energy > 0:
+            switchSpin(grid, i, j)
+        elif energy < 0:
+            r = np.random.uniform()
+            if r < np.exp(2*energy/temperature):
+                switchSpin(grid, i, j)
+        
+        if k/100000 < 1:
+            if k%10000 == 0:
+                saved_grids.append((np.copy(grid), k))
+        else:
+            if k%100000 == 0:
+                saved_grids.append((np.copy(grid), k))
+
+    saved_grids.append((np.copy(grid), steps))
+    
+    return saved_grids
+
+def updateGrid(i, fig, ax, frames, temp):
+    ax.set_array(frames[i][0])
+    fig.suptitle(f"Spin lattice after {frames[i][1]} steps\nTemperature={temp}", fontsize=16, fontweight="bold")
+    
+    return ax,
+
+def animateGrid(frames, temp):
+    fig = plt.figure()
+    cmap = plt.get_cmap("viridis")
+    ax = plt.imshow(frames[0][0], interpolation="none", cmap=cmap)
+    fig.suptitle(f"Spin lattice after 0 steps\nTemperature={temp}", fontsize=16, fontweight="bold")
+    anim = animation.FuncAnimation(fig, updateGrid, frames=len(frames), interval=200, fargs=(fig, ax, frames, temp), repeat=False)
+    plt.show()
+
 if __name__ == "__main__":
     rows = 200
     cols = 200
@@ -61,6 +101,7 @@ if __name__ == "__main__":
     parser.add_argument("--cols", type=int, help="Number of columns for the lattice. If not specified, it defaults to 200.")
     parser.add_argument("--steps", type=int, help="Number of Monte Carlo steps. If not specified, it defaults to 10e6.")
     parser.add_argument("--temp", type=int, help="Sets the temperature. If not specified, it defaults to 2.")
+    parser.add_argument("--anim", action=argparse.BooleanOptionalAction, help="Flag. Constructs an animation of the simulation.")
     args = parser.parse_args()
     
     if args.file:
@@ -110,6 +151,10 @@ if __name__ == "__main__":
     if args.temp:
         temperature = args.temp
 
-    start_grid = np.copy(grid)
-    runIsingModel(grid, temperature, steps)
-    showGrid(start_grid, grid, steps, temperature)
+    if args.anim:
+        anim_frames = animIsingModel(grid, temperature, steps)
+        animateGrid(anim_frames, temperature)
+    else:
+        start_grid = np.copy(grid)
+        runIsingModel(grid, temperature, steps)
+        showGrid(start_grid, grid, steps, temperature)

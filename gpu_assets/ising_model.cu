@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include <curand_kernel.h>
 
 __device__ void switchSpin(int *grid, int *cols, int i, int j) {

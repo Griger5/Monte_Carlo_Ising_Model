@@ -2,6 +2,15 @@ import argparse
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+import subprocess
+
+if subprocess.check_output("nvidia-smi"):
+    from pathlib import Path
+    import pycuda.autoinit
+    import pycuda.driver as drv
+    gpu_present = True
+else:
+    gpu_present = False
 
 def initGrid(rows, cols):
     grid = 2*np.random.randint(2, size=rows*cols)-1
@@ -28,8 +37,8 @@ def calculateEnergy(grid, i, j):
 def runIsingModel(grid, temperature, steps):
     rows, cols = grid.shape
     for _ in range(steps):
-        i = np.random.randint(1, rows-2)
-        j = np.random.randint(1, cols-2)
+        i = np.random.randint(1, rows-1)
+        j = np.random.randint(1, cols-1)
         energy = calculateEnergy(grid, i, j)
         if energy > 0:
             switchSpin(grid, i, j)
@@ -38,24 +47,31 @@ def runIsingModel(grid, temperature, steps):
             if r < np.exp(2*energy/temperature):
                 switchSpin(grid, i, j)
 
-def showGrid(start_grid, grid, steps, temp):
-    fig, (ax1, ax2) = plt.subplots(1, 2)
+def runIsingOnGPU(grid, temperature, steps):
+    rows, cols = grid.shape
 
-    cmap = plt.get_cmap("viridis")
+    grid = grid.astype(np.int32)
+    rows = np.array(rows).astype(np.int32)
+    cols = np.array(cols).astype(np.int32)
+    steps = np.array(steps).astype(np.int32)
+    temp = np.array(temperature).astype(np.float64)
 
-    ax1.imshow(start_grid, interpolation="none", cmap=cmap)
-    ax2.imshow(grid, interpolation="none", cmap=cmap)
-    
-    fig.suptitle(f"Spin lattice vs Spin lattice after {steps} steps\nTemperature={temp}", fontsize=16, fontweight="bold")
+    root_dir = Path(__file__).resolve().parent
+    ptx_path = str(root_dir)+"\\gpu_assets\\compiled_kernel\\ising_model.ptx"
 
-    plt.show()
+    mod = drv.module_from_file(ptx_path)
+
+    ising = mod.get_function("runIsingModel")
+    ising(drv.InOut(grid), drv.In(rows), drv.In(cols), drv.In(temp), drv.In(steps), block=(1024,1,1), grid=(20,1))
+
+    return grid
 
 def animIsingModel(grid, temperature, steps):
     rows, cols = grid.shape
     saved_grids = [(np.copy(grid), 0)]
     for k in range(steps):
-        i = np.random.randint(1, rows-2)
-        j = np.random.randint(1, cols-2)
+        i = np.random.randint(1, rows-1)
+        j = np.random.randint(1, cols-1)
         energy = calculateEnergy(grid, i, j)
         if energy > 0:
             switchSpin(grid, i, j)
@@ -75,6 +91,18 @@ def animIsingModel(grid, temperature, steps):
     
     return saved_grids
 
+def showGrid(start_grid, grid, steps, temp):
+    fig, (ax1, ax2) = plt.subplots(1, 2)
+
+    cmap = plt.get_cmap("viridis")
+
+    ax1.imshow(start_grid, interpolation="none", cmap=cmap)
+    ax2.imshow(grid, interpolation="none", cmap=cmap)
+    
+    fig.suptitle(f"Spin lattice vs Spin lattice after {steps} steps\nTemperature={temp}", fontsize=16, fontweight="bold")
+
+    plt.show()
+
 def updateGrid(i, fig, ax, frames, temp):
     ax.set_array(frames[i][0])
     fig.suptitle(f"Spin lattice after {frames[i][1]} steps\nTemperature={temp}", fontsize=16, fontweight="bold")
@@ -90,11 +118,6 @@ def animateGrid(frames, temp):
     plt.show()
 
 if __name__ == "__main__":
-    rows = 200
-    cols = 200
-    steps = 1000000
-    temperature = 2
-
     parser = argparse.ArgumentParser(description="Simulate an Ising model using Monte Carlo method.")
     parser.add_argument("--file", help="File with the starting grid, in a \'1 1 -1 ... -1 1\' format. If rows and columns aren't specified, the program will attempt to make it a square matrix. If only one is specified, the program will attempt to calculate the other one.")
     parser.add_argument("--rows", type=int, help="Number of rows for the lattice. If not specified, it defaults to 200.")
@@ -102,15 +125,21 @@ if __name__ == "__main__":
     parser.add_argument("--steps", type=int, help="Number of Monte Carlo steps. If not specified, it defaults to 10e6.")
     parser.add_argument("--temp", type=int, help="Sets the temperature. If not specified, it defaults to 2.")
     parser.add_argument("--anim", action=argparse.BooleanOptionalAction, help="Flag. Constructs an animation of the simulation.")
+    parser.add_argument("--no_gpu", action=argparse.BooleanOptionalAction, help="Flag. Forces the program to calculate on CPU.")
     args = parser.parse_args()
+
+    if args.no_gpu:
+        gpu_present = False
+
+    rows = 200
+    cols = 200
+    steps = 100_000_000 if gpu_present else 1_000_000
+    temperature = 2
     
     if args.file:
         with open(args.file) as file:
             grid = np.array(file.read().split(" ")).astype(int)
             length = grid.shape[0]
-            if length < 4:
-                print("The matrix is too small.")
-                exit(-1)
             if args.rows and args.cols:
                 if length == args.rows*args.cols:
                     rows, cols = args.rows, args.cols
@@ -156,5 +185,8 @@ if __name__ == "__main__":
         animateGrid(anim_frames, temperature)
     else:
         start_grid = np.copy(grid)
-        runIsingModel(grid, temperature, steps)
+        if gpu_present:
+            grid = runIsingOnGPU(grid, temperature, steps)
+        else:
+            runIsingModel(grid, temperature, steps)
         showGrid(start_grid, grid, steps, temperature)

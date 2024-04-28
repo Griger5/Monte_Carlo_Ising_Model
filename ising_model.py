@@ -96,15 +96,15 @@ def showGrid(start_grid, grid, steps, temp):
 
     cmap = plt.get_cmap("viridis")
 
-    ax1.imshow(start_grid, interpolation="none", cmap=cmap)
-    ax2.imshow(grid, interpolation="none", cmap=cmap)
+    ax1.imshow(start_grid[1:-1,1:-1], interpolation="none", cmap=cmap)
+    ax2.imshow(grid[1:-1,1:-1], interpolation="none", cmap=cmap)
     
     fig.suptitle(f"Spin lattice vs Spin lattice after {steps} steps\nTemperature={temp}", fontsize=16, fontweight="bold")
 
     plt.show()
 
 def updateGrid(i, fig, ax, frames, temp):
-    ax.set_array(frames[i][0])
+    ax.set_array(frames[i][0][1:-1,1:-1])
     fig.suptitle(f"Spin lattice after {frames[i][1]} steps\nTemperature={temp}", fontsize=16, fontweight="bold")
     
     return ax,
@@ -112,7 +112,7 @@ def updateGrid(i, fig, ax, frames, temp):
 def animateGrid(frames, temp):
     fig = plt.figure()
     cmap = plt.get_cmap("viridis")
-    ax = plt.imshow(frames[0][0], interpolation="none", cmap=cmap)
+    ax = plt.imshow(frames[0][0][1:-1,1:-1], interpolation="none", cmap=cmap)
     fig.suptitle(f"Spin lattice after 0 steps\nTemperature={temp}", fontsize=16, fontweight="bold")
     anim = animation.FuncAnimation(fig, updateGrid, frames=len(frames), interval=200, fargs=(fig, ax, frames, temp), repeat=False)
     plt.show()

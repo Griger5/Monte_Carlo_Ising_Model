@@ -9,6 +9,7 @@ if subprocess.check_output("nvidia-smi"):
     import pycuda.autoinit
     import pycuda.driver as drv
     gpu_present = True
+    dev = pycuda.autoinit.device
 else:
     gpu_present = False
 
@@ -56,13 +57,16 @@ def runIsingOnGPU(grid, temperature, steps):
     steps = np.array(steps).astype(np.int32)
     temp = np.array(temperature).astype(np.float64)
 
+    threads_per_block = 1024
+    number_of_SMs = dev.get_attribute(pycuda.driver.device_attribute.MULTIPROCESSOR_COUNT)
+
     root_dir = Path(__file__).resolve().parent
     ptx_path = str(root_dir)+"\\gpu_assets\\compiled_kernel\\ising_model.ptx"
 
     mod = drv.module_from_file(ptx_path)
 
     ising = mod.get_function("runIsingModel")
-    ising(drv.InOut(grid), drv.In(rows), drv.In(cols), drv.In(temp), drv.In(steps), block=(1024,1,1), grid=(20,1))
+    ising(drv.InOut(grid), drv.In(rows), drv.In(cols), drv.In(temp), drv.In(steps), block=(threads_per_block,1,1), grid=(number_of_SMs,1))
 
     return grid
 
@@ -122,7 +126,7 @@ if __name__ == "__main__":
     parser.add_argument("--file", help="File with the starting grid, in a \'1 1 -1 ... -1 1\' format. If rows and columns aren't specified, the program will attempt to make it a square matrix. If only one is specified, the program will attempt to calculate the other one.")
     parser.add_argument("--rows", type=int, help="Number of rows for the lattice. If not specified, it defaults to 200.")
     parser.add_argument("--cols", type=int, help="Number of columns for the lattice. If not specified, it defaults to 200.")
-    parser.add_argument("--steps", type=int, help="Number of Monte Carlo steps. If not specified, it defaults to 10e6.")
+    parser.add_argument("--steps", type=int, help="Number of Monte Carlo steps. If not specified, it defaults to 10e6. If GPU is present, it defaults to 10e8.")
     parser.add_argument("--temp", type=int, help="Sets the temperature. If not specified, it defaults to 2.")
     parser.add_argument("--anim", action=argparse.BooleanOptionalAction, help="Flag. Constructs an animation of the simulation.")
     parser.add_argument("--no_gpu", action=argparse.BooleanOptionalAction, help="Flag. Forces the program to calculate on CPU.")
@@ -133,7 +137,7 @@ if __name__ == "__main__":
 
     rows = 200
     cols = 200
-    steps = 100_000_000 if gpu_present else 1_000_000
+    steps = 1_000_000 if args.anim or not gpu_present else 100_000_000
     temperature = 2
     
     if args.file:

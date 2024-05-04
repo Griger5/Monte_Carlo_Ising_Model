@@ -1,5 +1,5 @@
 # Monte Carlo Ising Model
-This program simulates a simplified 2D Ising model with the Monte Carlo method. It uses NumPy to load a 2D spin lattice and Matplotlib to visualize the result. The program is also able to use PyCUDA for (optional) GPU acceleration. <br>
+This program simulates a simplified 2D Ising model with the Monte Carlo method. It uses NumPy to load a 2D spin lattice and Matplotlib to visualize the result. The program is also able to use PyCUDA for (optional) GPU acceleration. NOTE: For small enough lattice dimensions and number of steps, computing on the GPU may seem slower due to host->device and device->host memory transfer.<br>
 
 In every step of the simulation, one spin is selected at random. Its energy is calculated with the given formula:
 
@@ -21,16 +21,16 @@ Where ___T___ is the systems temperature.
 ## Installation:
 First, clone the repository.
 ```sh
-git  clone  https://github.com/Griger5/Monte_Carlo_Ising_Model.git
+git clone https://github.com/Griger5/Monte_Carlo_Ising_Model.git
 ```
 Then create and activate the virtual environment for the program.
 ```sh
-python  -m  venv  .venv
+python -m venv .venv
 ```
 #### On Windows:
 PowerShell:
 ```sh
-Set-ExecutionPolicy  -ExecutionPolicy  RemoteSigned  -Scope  CurrentUser
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 .venv\Scripts\Activate.ps1
 ```
 cmd:
@@ -40,16 +40,16 @@ cmd:
 #### On Linux:
 bash/zsh:
 ```sh
-source  .venv/bin/activate
+source .venv/bin/activate
 ```
 csh/tcsh:
 ```sh
-source  .venv/bin/activate.csh
+source .venv/bin/activate.csh
 ```
 ---
 After that is done, install all the required libraries using:
 ```sh
-pip  install  -r  requirements.txt
+pip install -r requirements.txt
 ```
 ## Usage
 This program supports user command line arguments. When none are present, it will run with the default parameters listed below. If a GPU and CUDA drivers are detected, the simulation will run on the GPU. Otherwise it simply runs on the CPU.
@@ -62,7 +62,7 @@ This program supports user command line arguments. When none are present, it wil
 
 When in the virtual environment, you can run the program with:
 ```sh
-python  ising_model.py [--args n] [--flags]
+python ising_model.py [--args n] [--flags]
 ```
 ### Args:
 #### \-\-file [filepath]
@@ -77,6 +77,11 @@ Specify the number of Monte Carlo steps in the simulation.
 Specify the temperature for the simulation.
 ### Flags:
 #### \-\-anim
-When present, produces an animation of the simulation instead of a "before and after" image.
+When present, produces an animation of the simulation instead of a "before and after" image. GPU acceleration is not supported for creating an animation.
 #### \-\-no_gpu
-When present, forces the program to compute on CPU.
+When present, forces the program to compute on CPU.<br>
+
+### Example use:
+```sh
+python ising_model.py --rows 150 --cols 150 --temp 1.75 --anim
+```

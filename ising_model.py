@@ -127,7 +127,7 @@ if __name__ == "__main__":
     parser.add_argument("--rows", type=int, help="Number of rows for the lattice. If not specified, it defaults to 200.")
     parser.add_argument("--cols", type=int, help="Number of columns for the lattice. If not specified, it defaults to 200.")
     parser.add_argument("--steps", type=int, help="Number of Monte Carlo steps. If not specified, it defaults to 10e6. If GPU is present, it defaults to 10e8.")
-    parser.add_argument("--temp", type=int, help="Sets the temperature. If not specified, it defaults to 2.")
+    parser.add_argument("--temp", type=float, help="Sets the temperature. If not specified, it defaults to 2.")
     parser.add_argument("--anim", action=argparse.BooleanOptionalAction, help="Flag. Constructs an animation of the simulation.")
     parser.add_argument("--no_gpu", action=argparse.BooleanOptionalAction, help="Flag. Forces the program to calculate on CPU.")
     args = parser.parse_args()

@@ -1,5 +1,5 @@
 # Monte Carlo Ising Model
-This program simulates a simplified 2D Ising model with the Monte Carlo method. It uses NumPy to load a 2D spin lattice and Matplotlib to visualize the result. The program is also able to use PyCUDA for (optional) GPU acceleration. NOTE: For small enough lattice dimensions and number of steps, computing on the GPU may seem slower due to host->device and device->host memory transfer.<br>
+This program simulates a simplified 2D Ising model with the Monte Carlo method. It uses NumPy to load a 2D spin lattice and Matplotlib to visualize the result. The program is also able to use PyCUDA for (optional) GPU acceleration.<br>NOTE: For small enough lattice dimensions and number of steps, computing on the GPU may seem slower due to host->device and device->host memory transfer.<br>
 
 In every step of the simulation, one spin is selected at random. Its energy is calculated with the given formula:
 
@@ -11,7 +11,7 @@ Where:
 
 -  ___s___ is the value of the given spin (either 1 or -1)
 
--  ___E___ is the energy of the square
+-  ___E___ is the energy of the spin's square
 
 If the calculated energy is greater than 0, the spin will switch. Otherwise, it will switch with the probability given by the following formula:
 
@@ -81,7 +81,7 @@ When present, produces an animation of the simulation instead of a "before and a
 #### \-\-no_gpu
 When present, forces the program to compute on CPU.<br>
 
-### Example use:
+### Example run:
 ```sh
 python ising_model.py --rows 150 --cols 150 --temp 1.75 --anim
 ```
